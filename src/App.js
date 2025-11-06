@@ -7,7 +7,6 @@ import {
   Polyline,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
 import * as XLSX from "xlsx";
 
 const initialData = [
@@ -54,11 +53,13 @@ function App() {
   const [gsm, setGSM] = useState("");
   const [address, setAddress] = useState("");
   const [editId, setEditId] = useState(null);
-
   const [data, setData] = useState(() => {
     const items = localStorage.getItem("userData");
     return items ? JSON.parse(items) : initialData;
   });
+  const [route, setRoute] = useState([]);
+  const [startId, setStartId] = useState("");
+  const [endId, setEndId] = useState("");
 
   useEffect(() => {
     localStorage.setItem("userData", JSON.stringify(data));
@@ -74,7 +75,6 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (!name || !surname || !gsm || !address) {
       alert("Hiçbir alan boş kalmamalı");
       return;
@@ -127,22 +127,74 @@ function App() {
       const url = `https://nominatim.openstreetmap.org/search?q=${encode}&format=jsonv2&limit=1`;
       const res = await fetch(url);
       const resData = await res.json();
+      if (!resData[0]) return alert("Adres bulunamadı");
 
       const { lat, lon } = resData[0];
-      const nweData = data.map((item) =>
+      const newData = data.map((item) =>
         item.id === id ? { ...item, lat: Number(lat), lon: Number(lon) } : item
       );
-      setData(nweData);
+      setData(newData);
     } catch (err) {
       console.error(err);
     }
   }
+
   const handleExcel = () => {
     const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Kullanıcılar");
     XLSX.writeFile(wb, "kullanicilar.xlsx");
   };
+
+  // 🔹 GraphHopper rota oluşturma (hatalara karşı güvenli)
+  async function handleRoute() {
+    if (!startId || !endId) return alert("Başlangıç ve bitiş seçiniz");
+
+    const start = data.find((x) => x.id === startId);
+    const end = data.find((x) => x.id === endId);
+    try {
+      const key = "59f14b7f-4bc2-4c48-ac35-2d8ee00b7854";
+      const url = `https://graphhopper.com/api/1/route?key=${key}`;
+      const body = {
+        points: [
+          [start.lon, start.lat],
+          [end.lon, end.lat],
+        ],
+        vehicle: "car",
+        locale: "tr",
+        calc_points: true,
+        points_encoded: false,
+      };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      
+
+      const json = await res.json();
+      console.log("GraphHopper yanıtı:", json);
+
+      if (!json.paths || !json.paths[0]) {
+        alert(
+          "Rota alınamadı. API limitine ulaşılmış olabilir veya adresler çok uzak."
+        );
+        return;
+      }
+
+      const points = json.paths[0].points.coordinates.map(([lon, lat]) => [
+        lat,
+        lon,
+      ]);
+      setRoute(points);
+    } catch (err) {
+      console.error("Rota oluşturulurken hata:", err);
+      alert("Rota oluşturulurken hata oluştu. Konsolu kontrol edin.");
+    }
+  }
+
   return (
     <div className="">
       <div className="flex w-full items-center justify-start mt-5 ">
@@ -184,7 +236,6 @@ function App() {
             value={address}
             onChange={handleInputChange}
           />
-
           <button className="border px-3 py-1 bg-blue-500 text-white">
             {editId ? "Güncelle" : "Ekle"}
           </button>
@@ -224,8 +275,8 @@ function App() {
                     Düzenle
                   </button>
                   <button
-                    className="px-2 py-1 bg-green-400 rounded text-sm text-white"
                     onClick={() => handleGeocode(id)}
+                    className="px-2 py-1 bg-green-400 rounded text-sm text-white"
                   >
                     Geocode
                   </button>
@@ -241,12 +292,51 @@ function App() {
           })}
         </div>
       </div>
+
       <button
         onClick={handleExcel}
         className="mt-3 px-3 py-1 bg-purple-600 text-white rounded"
       >
         Excel'e Aktar
       </button>
+
+      <div className="mt-4 flex items-center gap-2">
+        <select
+          className="border px-2 py-1"
+          value={startId}
+          onChange={(e) => setStartId(e.target.value)}
+        >
+          <option value="">Başlangıç Noktası</option>
+          {data
+            .filter((x) => x.lat && x.lon)
+            .map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.name} {x.surname}
+              </option>
+            ))}
+        </select>
+        <select
+          className="border px-2 py-1"
+          value={endId}
+          onChange={(e) => setEndId(e.target.value)}
+        >
+          <option value="">Bitiş Noktası</option>
+          {data
+            .filter((x) => x.lat && x.lon)
+            .map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.name} {x.surname}
+              </option>
+            ))}
+        </select>
+        <button
+          onClick={handleRoute}
+          className="bg-blue-600 text-white px-3 py-1 rounded"
+        >
+          Rota Oluştur
+        </button>
+      </div>
+
       <div className="mt-5">
         <h2 className="text-lg font-semibold mb-2">Kişiler Haritası</h2>
         <MapContainer
@@ -271,6 +361,7 @@ function App() {
                 </Popup>
               </Marker>
             ))}
+          {route.length > 0 && <Polyline positions={route} color="red" />}
         </MapContainer>
       </div>
     </div>
