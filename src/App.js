@@ -146,7 +146,6 @@ function App() {
     XLSX.writeFile(wb, "kullanicilar.xlsx");
   };
 
-  // 🔹 GraphHopper rota oluşturma (hatalara karşı güvenli)
   async function handleRoute() {
     if (!startId || !endId) return alert("Başlangıç ve bitiş seçiniz");
 
@@ -175,11 +174,11 @@ function App() {
       
 
       const json = await res.json();
-      console.log("GraphHopper yanıtı:", json);
+      console.log(json);
 
       if (!json.paths || !json.paths[0]) {
         alert(
-          "Rota alınamadı. API limitine ulaşılmış olabilir veya adresler çok uzak."
+          "Rota alınamadı"
         );
         return;
       }
@@ -191,7 +190,6 @@ function App() {
       setRoute(points);
     } catch (err) {
       console.error("Rota oluşturulurken hata:", err);
-      alert("Rota oluşturulurken hata oluştu. Konsolu kontrol edin.");
     }
   }
 
