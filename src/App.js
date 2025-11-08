@@ -329,7 +329,7 @@ function App() {
 
    
       <div className="mt-6">
-        <h2 className="text-lg font-semibold mb-3 text-blue-700">🗺️ Kişiler Haritası</h2>
+        <h2 className="text-lg font-semibold mb-3 text-blue-700">Kişiler Haritası</h2>
         <div className="w-full h-[400px] rounded-2xl overflow-hidden shadow-lg border border-blue-200">
           <MapContainer
             center={[39.9255, 32.8663]}
