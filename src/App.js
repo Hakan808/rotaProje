@@ -7,44 +7,29 @@ import {
   Polyline,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 import * as XLSX from "xlsx";
 
+
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+
 const initialData = [
-  {
-    id: "1",
-    name: "Ahmet",
-    surname: "Yılmaz",
-    gsm: "05555555555",
-    address: "Pilkington Avenue",
-  },
-  {
-    id: "2",
-    name: "Mehmet",
-    surname: "Demir",
-    gsm: "05443332211",
-    address: "Kingston Road",
-  },
-  {
-    id: "3",
-    name: "Ayşe",
-    surname: "Kara",
-    gsm: "05321234567",
-    address: "Baker Street",
-  },
-  {
-    id: "4",
-    name: "Fatma",
-    surname: "Çelik",
-    gsm: "05061239876",
-    address: "Oxford Street",
-  },
-  {
-    id: "5",
-    name: "Ali",
-    surname: "Şahin",
-    gsm: "05519876543",
-    address: "Cambridge Avenue",
-  },
+  { id: "1", name: "Ahmet", surname: "Yılmaz", gsm: "05555555555", address: "Pilkington Avenue" },
+  { id: "2", name: "Mehmet", surname: "Demir", gsm: "05443332211", address: "Kingston Road" },
+  { id: "3", name: "Ayşe", surname: "Kara", gsm: "05321234567", address: "Baker Street" },
+  { id: "4", name: "Fatma", surname: "Çelik", gsm: "05061239876", address: "Oxford Street" },
+  { id: "5", name: "Ali", surname: "Şahin", gsm: "05519876543", address: "Cambridge Avenue" },
 ];
 
 function App() {
@@ -127,8 +112,6 @@ function App() {
       const url = `https://nominatim.openstreetmap.org/search?q=${encode}&format=jsonv2&limit=1`;
       const res = await fetch(url);
       const resData = await res.json();
-      if (!resData[0]) return alert("Adres bulunamadı");
-
       const { lat, lon } = resData[0];
       const newData = data.map((item) =>
         item.id === id ? { ...item, lat: Number(lat), lon: Number(lon) } : item
@@ -171,37 +154,35 @@ function App() {
         body: JSON.stringify(body),
       });
 
-      
-
       const json = await res.json();
-      console.log(json);
-
+      console.log(json)
       if (!json.paths || !json.paths[0]) {
-        alert(
-          "Rota alınamadı"
-        );
+        alert("Rota alınamadı");
         return;
       }
 
-      const points = json.paths[0].points.coordinates.map(([lon, lat]) => [
-        lat,
-        lon,
-      ]);
+      const points = json.paths[0].points.coordinates.map(([lon, lat]) => [lat, lon]);
+     
       setRoute(points);
+      
     } catch (err) {
-      console.error("Rota oluşturulurken hata:", err);
+      console.log("Rota oluşturulurken hata:", err);
     }
   }
 
   return (
-    <div className="">
-      <div className="flex w-full items-center justify-start mt-5 ">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50 p-5">
+      <div className="flex flex-col lg:flex-row w-full justify-start mt-5 gap-6">
+  
         <form
-          className="shadow-xl p-5 rounded flex flex-col gap-2 flex-1"
+          className="shadow-xl p-6 rounded-2xl bg-white flex flex-col gap-3 flex-1 transition-transform hover:scale-[1.01]"
           onSubmit={handleSubmit}
         >
-          <legend>{editId ? "Kayıt Düzenle" : "Kayıt Ekle"}</legend>
+          <legend className="text-xl font-semibold text-blue-700 mb-2">
+            {editId ? "Kayıt Düzenle" : "Kayıt Ekle"}
+          </legend>
 
+          
           <input
             type="text"
             name="name"
@@ -234,18 +215,24 @@ function App() {
             value={address}
             onChange={handleInputChange}
           />
-          <button className="border px-3 py-1 bg-blue-500 text-white">
+
+
+          <button
+            className="mt-2 border px-3 py-2 bg-blue-600 text-white rounded-lg font-medium 
+            hover:bg-blue-700 hover:shadow-md transition-all duration-200 transform hover:scale-105"
+          >
             {editId ? "Güncelle" : "Ekle"}
           </button>
         </form>
 
-        <div className="flex flex-col flex-5">
-          <div className="flex justify-between border py-2 font-bold">
-            <p>Id</p>
+     
+        <div className="flex flex-col flex-1 w-full overflow-x-auto rounded-xl bg-white shadow-lg">
+          <div className="grid grid-cols-8 gap-2 border-b p-2 font-semibold bg-blue-100 text-blue-800 text-sm text-center">
+            <p>ID</p>
             <p>Ad</p>
             <p>Soyad</p>
             <p>Gsm</p>
-            <p>Address</p>
+            <p>Adres</p>
             <p>Lat</p>
             <p>Lon</p>
             <p>İşlemler</p>
@@ -256,31 +243,31 @@ function App() {
             return (
               <div
                 key={id}
-                className="flex w-full justify-between border py-2 items-center"
+                className="grid grid-cols-8 gap-6 p-2 text-sm items-center text-center border-b hover:bg-blue-50 transition"
               >
-                <p className="flex-1">{id}</p>
-                <p className="flex-1">{name}</p>
-                <p className="flex-1">{surname}</p>
-                <p className="flex-1">{gsm}</p>
-                <p className="flex-1">{address}</p>
-                <p className="flex-1">{lat}</p>
-                <p className="flex-1">{lon}</p>
-                <div className="flex gap-2">
+                <p className="truncate">{id}</p>
+                <p className="truncate">{name}</p>
+                <p className="truncate">{surname}</p>
+                <p className="truncate">{gsm}</p>
+                <p className="truncate">{address}</p>
+                <p className="truncate">{lat}</p>
+                <p className="truncate">{lon}</p>
+                <div className="flex gap-1 justify-center flex-wrap">
                   <button
                     onClick={() => handleEdit(item)}
-                    className="bg-yellow-400 text-white px-2 py-1 rounded"
+                    className="bg-yellow-400 text-white px-2 py-1 rounded text-xs hover:bg-yellow-500 transition-all duration-200 transform hover:scale-105"
                   >
                     Düzenle
                   </button>
                   <button
                     onClick={() => handleGeocode(id)}
-                    className="px-2 py-1 bg-green-400 rounded text-sm text-white"
+                    className="px-2 py-1 bg-green-500 rounded text-xs text-white hover:bg-green-600 transition-all duration-200 transform hover:scale-105"
                   >
                     Geocode
                   </button>
                   <button
                     onClick={() => handleDelete(id)}
-                    className="bg-red-500 text-white px-2 py-1 rounded"
+                    className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600 transition-all duration-200 transform hover:scale-105"
                   >
                     Sil
                   </button>
@@ -291,64 +278,69 @@ function App() {
         </div>
       </div>
 
-      <button
-        onClick={handleExcel}
-        className="mt-3 px-3 py-1 bg-purple-600 text-white rounded"
-      >
-        Excel'e Aktar
-      </button>
 
-      <div className="mt-4 flex items-center gap-2">
-        <select
-          className="border px-2 py-1"
-          value={startId}
-          onChange={(e) => setStartId(e.target.value)}
-        >
-          <option value="">Başlangıç Noktası</option>
-          {data
-            .filter((x) => x.lat && x.lon)
-            .map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.name} {x.surname}
-              </option>
-            ))}
-        </select>
-        <select
-          className="border px-2 py-1"
-          value={endId}
-          onChange={(e) => setEndId(e.target.value)}
-        >
-          <option value="">Bitiş Noktası</option>
-          {data
-            .filter((x) => x.lat && x.lon)
-            .map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.name} {x.surname}
-              </option>
-            ))}
-        </select>
+      <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white p-4 rounded-xl shadow-md">
         <button
-          onClick={handleRoute}
-          className="bg-blue-600 text-white px-3 py-1 rounded"
+          onClick={handleExcel}
+          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 hover:shadow-md transition-all duration-200 transform hover:scale-105"
         >
-          Rota Oluştur
+          Excel'e Aktar
         </button>
+
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <select
+            className="border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none transition-all duration-200"
+            value={startId}
+            onChange={(e) => setStartId(e.target.value)}
+          >
+            <option value="">Başlangıç Noktası</option>
+            {data
+              .filter((x) => x.lat && x.lon)
+              .map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name} {x.surname}
+                </option>
+              ))}
+          </select>
+
+          <select
+            className="border px-3 py-2 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none transition-all duration-200"
+            value={endId}
+            onChange={(e) => setEndId(e.target.value)}
+          >
+            <option value="">Bitiş Noktası</option>
+            {data
+              .filter((x) => x.lat && x.lon)
+              .map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.name} {x.surname}
+                </option>
+              ))}
+          </select>
+
+          <button
+            onClick={handleRoute}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 hover:shadow-md transition-all duration-200 transform hover:scale-105"
+          >
+            Rota Oluştur
+          </button>
+        </div>
       </div>
 
-      <div className="mt-5">
-        <h2 className="text-lg font-semibold mb-2">Kişiler Haritası</h2>
-        <MapContainer
-          center={[39.9255, 32.8663]}
-          zoom={6}
-          style={{ height: "400px", width: "100%" }}
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
-          />
-          {data
-            .filter((x) => x.lat && x.lon)
-            .map((x) => (
+   
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold mb-3 text-blue-700">🗺️ Kişiler Haritası</h2>
+        <div className="w-full h-[400px] rounded-2xl overflow-hidden shadow-lg border border-blue-200">
+          <MapContainer
+            center={[39.9255, 32.8663]}
+            zoom={6}
+            style={{ height: "100%", width: "100%" }}
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="&copy; OpenStreetMap contributors"
+            />
+            {data.filter((x) => x.lat && x.lon).map((x) => (
               <Marker key={x.id} position={[x.lat, x.lon]}>
                 <Popup>
                   <strong>
@@ -359,8 +351,9 @@ function App() {
                 </Popup>
               </Marker>
             ))}
-          {route.length > 0 && <Polyline positions={route} color="red" />}
-        </MapContainer>
+            {route.length > 0 && <Polyline positions={route} color="red" />}
+          </MapContainer>
+        </div>
       </div>
     </div>
   );
